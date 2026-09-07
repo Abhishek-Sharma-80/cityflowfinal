@@ -919,8 +919,140 @@
         "best_model_name": "RandomForest"
       }
     },
-    "status": "ACTIVE",
+    "status": "ARCHIVED",
     "prediction_count": 0,
     "created_at": "2026-09-07 12:06:12"
+  },
+  {
+    "model_id": "REG-traffic_model_v003",
+    "version": "traffic_model_v003",
+    "model_type": "RandomForest",
+    "dataset_id": "urban_traffic_pems_real.csv",
+    "target_variable": "future_congestion",
+    "horizons_supported": [
+      "15m",
+      "30m",
+      "60m"
+    ],
+    "features": [
+      "hour_of_day",
+      "day_of_week",
+      "is_weekend",
+      "sin_hour",
+      "cos_hour",
+      "current_speed_kmh",
+      "volume_vph",
+      "speed_ratio",
+      "congestion_level",
+      "traffic_density",
+      "occupancy_pct",
+      "temperature_c",
+      "rainfall_mm",
+      "visibility_km",
+      "incident_active",
+      "incident_severity",
+      "logistics_volume_norm",
+      "parking_pressure",
+      "lag_1_volume",
+      "lag_1_speed"
+    ],
+    "training_samples": 6575,
+    "validation_samples": 1409,
+    "test_samples": 1410,
+    "test_mae": 0.0023,
+    "test_rmse": 0.0079,
+    "test_r2": 0.9892,
+    "candidate_metrics": {
+      "15m": {
+        "candidates": [
+          {
+            "model_name": "RandomForest",
+            "mae": 0.0023,
+            "rmse": 0.0079,
+            "r2": 0.9892,
+            "test_samples": 1410,
+            "is_best": true
+          },
+          {
+            "model_name": "GradientBoosting",
+            "mae": 0.0038,
+            "rmse": 0.0125,
+            "r2": 0.973,
+            "test_samples": 1410,
+            "is_best": false
+          },
+          {
+            "model_name": "HistGradientBoosting",
+            "mae": 0.0035,
+            "rmse": 0.0111,
+            "r2": 0.9788,
+            "test_samples": 1410,
+            "is_best": false
+          }
+        ],
+        "best_model_name": "RandomForest"
+      },
+      "30m": {
+        "candidates": [
+          {
+            "model_name": "RandomForest",
+            "mae": 0.0043,
+            "rmse": 0.0131,
+            "r2": 0.9706,
+            "test_samples": 1407,
+            "is_best": true
+          },
+          {
+            "model_name": "GradientBoosting",
+            "mae": 0.0068,
+            "rmse": 0.0203,
+            "r2": 0.929,
+            "test_samples": 1407,
+            "is_best": false
+          },
+          {
+            "model_name": "HistGradientBoosting",
+            "mae": 0.0062,
+            "rmse": 0.0195,
+            "r2": 0.9346,
+            "test_samples": 1407,
+            "is_best": false
+          }
+        ],
+        "best_model_name": "RandomForest"
+      },
+      "60m": {
+        "candidates": [
+          {
+            "model_name": "RandomForest",
+            "mae": 0.0066,
+            "rmse": 0.0214,
+            "r2": 0.9213,
+            "test_samples": 1403,
+            "is_best": true
+          },
+          {
+            "model_name": "GradientBoosting",
+            "mae": 0.0102,
+            "rmse": 0.0237,
+            "r2": 0.9034,
+            "test_samples": 1403,
+            "is_best": false
+          },
+          {
+            "model_name": "HistGradientBoosting",
+            "mae": 0.0095,
+            "rmse": 0.0235,
+            "r2": 0.9055,
+            "test_samples": 1403,
+            "is_best": false
+          }
+        ],
+        "best_model_name": "RandomForest"
+      }
+    },
+    "status": "ACTIVE",
+    "prediction_count": 0,
+    "created_at": "2026-09-07 14:42:36"
   }
 ]
