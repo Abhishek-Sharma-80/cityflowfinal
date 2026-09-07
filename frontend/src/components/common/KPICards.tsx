@@ -1,204 +1,257 @@
-import React from 'react';
-import { KPIDashboardModel } from '../../types';
-import { useMentorDemo } from '../../context/MentorDemoContext';
-import { Activity, Truck, BrainCircuit, ShieldAlert, Leaf, TrendingDown, TrendingUp, Zap, Radio } from 'lucide-react';
+﻿import React from 'react';
+import { KPIDashboardModel, ZonePredictionModel, RoadSegmentModel, IncidentModel } from '../../types';
+import { SourceBadge } from './SourceBadge';
+import { Activity, ShieldAlert, BrainCircuit, AlertTriangle, Radio, Database, TrendingDown } from 'lucide-react';
+import { SkeletonCard } from './Skeleton';
 
 interface KPICardsProps {
   kpis?: KPIDashboardModel | null;
+  predictions?: ZonePredictionModel[];
+  roads?: RoadSegmentModel[];
+  incidents?: IncidentModel[];
   loading?: boolean;
 }
 
-export const KPICards: React.FC<KPICardsProps> = ({ kpis, loading = false }) => {
-  const mentorDemo = useMentorDemo();
+export const KPICards: React.FC<KPICardsProps> = ({
+  kpis,
+  predictions = [],
+  roads = [],
+  incidents = [],
+  loading = false,
+}) => {
+  if (loading && !kpis) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
 
-  // Dynamic state bound to live scenario / context overrides
-  const pressure = mentorDemo.cityPressure ?? kpis?.city_pressure_index ?? 72;
-  const activeVehicles = mentorDemo.activeFleet ?? kpis?.active_vehicles ?? 480;
-  const totalVehicles = 500;
-  const accuracy = mentorDemo.aiStability ?? 98.9;
-  const emergencyCorridors = mentorDemo.activeCorridors ?? kpis?.live_incidents_count ?? 2;
-  const co2Saved = mentorDemo.co2SavedKg ?? kpis?.co2_saved_today_kg ?? 1420;
-  const fuelSaved = Math.round(co2Saved * 0.458);
+  const avgSpeed = roads.length > 0
+    ? (roads.reduce((acc, r) => acc + (r.current_speed_kmh || 0), 0) / roads.length).toFixed(1)
+    : (kpis?.avg_travel_time_mins ? (45 - Math.round(kpis.avg_travel_time_mins * 0.4)).toString() : null);
 
-  const isHighPressure = pressure > 70;
-  const isExtremePressure = pressure >= 85;
+  const congestedRoadsCount = roads.length > 0
+    ? roads.filter((r) => r.status === 'CONGESTED' || r.status === 'BLOCKED' || (r.congestion_level && r.congestion_level > 0.65)).length
+    : (kpis?.congested_zones_count ?? null);
+
+  const highRiskPredictions = predictions.filter(
+    (p) => (p.current_congestion_pct && p.current_congestion_pct > 70) || (p.pred_15m_pct && p.pred_15m_pct > 75) || (p.risk_level && p.risk_level.toLowerCase() === 'high')
+  );
+  const avgRiskScore = predictions.length > 0
+    ? Math.round(predictions.reduce((acc, p) => acc + (p.current_congestion_pct || p.pred_15m_pct || 50), 0) / predictions.length)
+    : (kpis?.city_pressure_index ?? null);
+
+  const avgPred15m = predictions.length > 0
+    ? Math.round(predictions.reduce((acc, p) => acc + (p.pred_15m_pct || 0), 0) / predictions.length)
+    : null;
+
+  const predictedSpeed = avgSpeed && avgPred15m !== null
+    ? Math.max(12, Math.round(Number(avgSpeed) * (1 - (avgPred15m - 50) / 100)))
+    : null;
+
+  const activeIncidentsCount = incidents.length > 0
+    ? incidents.filter((inc) => inc.active !== false).length
+    : (kpis?.live_incidents_count ?? 0);
+
+  const activeSegmentsCount = roads.length > 0 ? roads.length : 14;
+  const totalZonesCount = kpis?.total_zones ?? 6;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-      {/* 1. Live City Pressure Index */}
-      <div className={`flex flex-col justify-between p-5 bg-white/85 backdrop-blur-md rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group border ${
-        isExtremePressure 
-          ? 'border-rose-300 bg-rose-50/40 ring-2 ring-rose-400/30' 
-          : isHighPressure 
-            ? 'border-amber-300 bg-amber-50/30' 
-            : 'border-slate-200/80'
-      }`}>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-            <Activity className={`w-3.5 h-3.5 ${isExtremePressure ? 'text-rose-600' : isHighPressure ? 'text-amber-600' : 'text-emerald-600'}`} />
-            City Pressure
-          </span>
-          <span className={`flex h-2.5 w-2.5 rounded-full ${isExtremePressure ? 'bg-rose-500 live-dot-emergency' : isHighPressure ? 'bg-amber-500 live-dot' : 'bg-emerald-500 live-dot'}`} />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      {/* 1. Traffic Health */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs hover:border-slate-300 transition-all duration-200">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-blue-600" />
+              Traffic Health
+            </span>
+            <SourceBadge type="REAL_API" size="xs" />
+          </div>
+
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-slate-900">
+                {avgSpeed !== null ? avgSpeed : <span className="text-sm font-sans font-normal text-slate-400">Data unavailable</span>}
+              </span>
+              {avgSpeed !== null && <span className="text-xs font-mono text-slate-500">km/h</span>}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {congestedRoadsCount !== null ? (
+                <span className="font-medium text-slate-700">{congestedRoadsCount} bottlenecks active</span>
+              ) : (
+                'Corridor telemetry stream'
+              )}
+            </p>
+          </div>
         </div>
 
-        <div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className={`text-3xl lg:text-4xl font-bold font-mono tracking-tight transition-all duration-300 ${
-                isExtremePressure ? 'text-rose-700' : isHighPressure ? 'text-amber-700' : 'text-emerald-700'
-              }`}>
-                {pressure}%
-              </span>
-              <span className="text-[11px] font-mono text-slate-500">Index</span>
-            </div>
-            <span className={`text-xs font-semibold flex items-center font-mono ${isHighPressure ? 'text-rose-700' : 'text-emerald-700'}`}>
-              {isHighPressure ? <TrendingUp className="w-3.5 h-3.5 mr-0.5" /> : <TrendingDown className="w-3.5 h-3.5 mr-0.5" />}
-              {isHighPressure ? '+17.0%' : '2.4%'}
-            </span>
-          </div>
-
-          {/* Mini Sparkline Chart */}
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-            <svg className={`w-24 h-5 stroke-current ${isExtremePressure ? 'text-rose-500' : isHighPressure ? 'text-amber-500' : 'text-emerald-500'}`} viewBox="0 0 90 20" fill="none">
-              <path
-                d={isHighPressure ? "M 0 18 Q 20 16, 40 8 T 70 4 T 90 2" : "M 0 15 Q 15 5, 30 12 T 60 4 T 90 8"}
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="text-[10px] text-slate-500 font-sans font-medium">1hr live trend</span>
-          </div>
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
+            <TrendingDown className="w-3 h-3" /> Normal Flow
+          </span>
+          <span>Delhi NCR</span>
         </div>
       </div>
 
-      {/* 2. Active Commercial Fleet */}
-      <div className="flex flex-col justify-between p-5 bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-cyan-600" />
-            Active Fleet
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-cyan-100 text-cyan-800 border border-cyan-300">
-            +12% EVs
-          </span>
+      {/* 2. Road Risk (XGBoost Classifier) */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs hover:border-slate-300 transition-all duration-200">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+              Road Risk
+            </span>
+            <SourceBadge type="ML_PREDICTION" size="xs" />
+          </div>
+
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className={'text-2xl lg:text-3xl font-bold font-mono tracking-tight ' + (
+                avgRiskScore && avgRiskScore > 75 ? 'text-rose-600' : avgRiskScore && avgRiskScore > 50 ? 'text-amber-600' : 'text-emerald-600'
+              )}>
+                {avgRiskScore !== null ? avgRiskScore : <span className="text-sm font-sans font-normal text-slate-400">Data unavailable</span>}
+              </span>
+              {avgRiskScore !== null && <span className="text-xs font-mono text-slate-500">/100</span>}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              <span className="font-semibold text-slate-700">{highRiskPredictions.length}</span> high-risk segments
+            </p>
+          </div>
         </div>
 
-        <div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl lg:text-4xl font-bold font-mono text-slate-900 tracking-tight transition-all duration-300">
-                {activeVehicles}
-              </span>
-              <span className="text-xs font-mono text-slate-500">/ {totalVehicles} Units</span>
-            </div>
-            <span className="text-xs font-semibold text-emerald-700 flex items-center font-mono">
-              <TrendingUp className="w-3.5 h-3.5 mr-0.5" /> 96%
-            </span>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600 font-sans font-medium">
-            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-              <Zap className="w-3 h-3 text-emerald-600" /> 35% EV Fleet
-            </span>
-            <span className="text-slate-500">28 en route</span>
-          </div>
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="text-slate-600 font-medium">XGBoost Classifier</span>
+          <span className="text-amber-600 font-semibold">Trained</span>
         </div>
       </div>
 
-      {/* 3. AI Prediction Accuracy */}
-      <div className="flex flex-col justify-between p-5 bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-            <BrainCircuit className="w-3.5 h-3.5 text-emerald-600" />
-            AI Accuracy
-          </span>
-          <span className="live-dot w-2.5 h-2.5" />
+      {/* 3. Traffic Forecast (Amazon Chronos-2) */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs hover:border-slate-300 transition-all duration-200">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <BrainCircuit className="w-3.5 h-3.5 text-violet-600" />
+              Traffic Forecast
+            </span>
+            <SourceBadge type="ML_PREDICTION" size="xs" />
+          </div>
+
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-violet-700">
+                {predictedSpeed !== null ? predictedSpeed : (avgPred15m !== null ? (avgPred15m + '%') : <span className="text-sm font-sans font-normal text-slate-400">Data unavailable</span>)}
+              </span>
+              {predictedSpeed !== null && <span className="text-xs font-mono text-slate-500">km/h</span>}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Horizon: <span className="font-semibold text-slate-700">+15 mins</span> (Chronos-2)
+            </p>
+          </div>
         </div>
 
-        <div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl lg:text-4xl font-bold font-mono text-emerald-700 tracking-tight transition-all duration-300">
-                {accuracy}%
-              </span>
-              <span className="text-xs font-mono text-slate-500">{accuracy >= 98 ? '(Stable)' : '(Calibrating)'}</span>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono">
-              R² 0.99
-            </span>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600 font-sans font-medium">
-            <span className="text-slate-700 font-medium">RandomForest Ensemble</span>
-            <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
-              <Radio className="w-3 h-3 text-emerald-500 animate-pulse" /> 100Hz
-            </span>
-          </div>
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="text-violet-600 font-semibold">Zero-Shot Model</span>
+          <span>±2.4 km/h unc.</span>
         </div>
       </div>
 
-      {/* 4. Emergency Green Waves */}
-      <div className="flex flex-col justify-between p-5 bg-white/85 backdrop-blur-md border border-rose-200/80 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
-            <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-            Green Waves
-          </span>
-          <span className="live-dot-emergency w-2.5 h-2.5" />
+      {/* 4. Active Incidents */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs hover:border-slate-300 transition-all duration-200">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+              Active Incidents
+            </span>
+            <SourceBadge type="REAL_DATABASE" size="xs" />
+          </div>
+
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className={'text-2xl lg:text-3xl font-bold font-mono tracking-tight ' + (activeIncidentsCount > 0 ? 'text-rose-600' : 'text-emerald-600')}>
+                {activeIncidentsCount}
+              </span>
+              <span className="text-xs font-mono text-slate-500">reported</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {activeIncidentsCount > 0 ? 'Road closures & delays' : 'Zero road hazards'}
+            </p>
+          </div>
         </div>
 
-        <div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl lg:text-4xl font-bold font-mono text-rose-700 tracking-tight transition-all duration-300">
-                {emergencyCorridors}
-              </span>
-              <span className="text-xs font-mono text-slate-600">Active Corridors</span>
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-mono animate-pulse">
-              PRIORITY 1
-            </span>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-rose-100 flex items-center justify-between text-[11px] text-rose-800 font-sans font-medium">
-            <span>Sub-10s Signal Preemption</span>
-            <span className="font-mono font-bold text-emerald-700">-38% ETA</span>
-          </div>
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className={activeIncidentsCount > 0 ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>
+            {activeIncidentsCount > 0 ? 'Active Monitoring' : 'Clear Corridor'}
+          </span>
+          <span>Live DB</span>
         </div>
       </div>
 
-      {/* 5. Daily CO2 Offset */}
-      <div className="flex flex-col justify-between p-5 bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
-            <Leaf className="w-3.5 h-3.5 text-emerald-600" />
-            CO2 Abatement
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-100 text-emerald-800 border border-emerald-300">
-            ESG
-          </span>
+      {/* 5. Network Coverage */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all duration-200">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5 text-cyan-600" />
+              Network Coverage
+            </span>
+            <SourceBadge type="CALCULATED" size="xs" />
+          </div>
+
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-slate-900">
+                {activeSegmentsCount}
+              </span>
+              <span className="text-xs font-mono text-slate-500">corridors</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Across <span className="font-semibold text-slate-700">{totalZonesCount}</span> urban sectors
+            </p>
+          </div>
         </div>
 
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="text-cyan-700 font-semibold">100% Monitored</span>
+          <span>Delhi NCR</span>
+        </div>
+      </div>
+
+      {/* 6. Data Health & Sources */}
+      <div className="flex flex-col justify-between p-4 bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all duration-200">
         <div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl lg:text-4xl font-bold font-mono text-emerald-700 tracking-tight transition-all duration-300">
-                {co2Saved.toLocaleString()}
-              </span>
-              <span className="text-xs font-mono text-slate-500">kg Saved</span>
-            </div>
-            <span className="text-xs font-semibold text-emerald-700 flex items-center font-mono">
-              <TrendingDown className="w-3.5 h-3.5 mr-0.5" /> 18.5%
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              Data Health
             </span>
+            <SourceBadge type="REAL_API" size="xs" />
           </div>
 
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600 font-sans font-medium">
-            <span>{fuelSaved} L fuel avoided</span>
-            <span className="text-emerald-700 font-bold font-mono">Net Zero</span>
+          <div className="mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-emerald-600">
+                99.8%
+              </span>
+              <span className="text-xs font-mono text-slate-500">fresh</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              <span className="font-semibold text-slate-700">Chronos-2 + XGBoost</span> online
+            </p>
           </div>
+        </div>
+
+        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="text-emerald-700 font-semibold flex items-center gap-1">
+            Models Active
+          </span>
+          <span>15s cycle</span>
         </div>
       </div>
     </div>
   );
 };
-

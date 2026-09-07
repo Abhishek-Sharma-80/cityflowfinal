@@ -1,33 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { KPIDashboardModel, ZoneModel, RoadSegmentModel, VehicleModel, LoadingZoneModel, IncidentModel, ZonePredictionModel, PressureClass } from '../types';
+﻿import React, { useState, useEffect } from 'react';
+import {
+  KPIDashboardModel,
+  ZoneModel,
+  RoadSegmentModel,
+  VehicleModel,
+  LoadingZoneModel,
+  IncidentModel,
+  ZonePredictionModel,
+} from '../types';
 import { api } from '../services/api';
 import { KPICards } from '../components/common/KPICards';
 import { CityDigitalTwinMap } from '../components/map/CityDigitalTwinMap';
-import { useMentorDemo } from '../context/MentorDemoContext';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
+import { SourceBadge } from '../components/common/SourceBadge';
+import { SkeletonPage } from '../components/common/Skeleton';
 import {
   BrainCircuit,
-  Activity,
+  ShieldAlert,
   AlertTriangle,
-  Zap,
   ChevronRight,
-  Clock,
-  Warehouse,
-  Sliders,
-  Flame,
-  Radio
+  Cpu,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { LiveSnapshot } from '../hooks/useLiveData';
@@ -46,21 +38,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
   const [loadingZones, setLoadingZones] = useState<LoadingZoneModel[]>([]);
   const [incidents, setIncidents] = useState<IncidentModel[]>([]);
   const [predictions, setPredictions] = useState<ZonePredictionModel[]>([]);
-  const [trends, setTrends] = useState<any>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>('Z-01');
-  const [loading, setLoading] = useState(true);
-
-  const {
-    activeScenario,
-    activeEarlyWarnings,
-    activeBlockages,
-    sectors
-  } = useMentorDemo();
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [kpiData, zoneData, roadData, vehData, lzData, incData, predData, trendData] = await Promise.all([
+        const [kpiData, zoneData, roadData, vehData, lzData, incData, predData] = await Promise.all([
           api.getKPIs(),
           api.getZones(),
           api.getRoads(),
@@ -68,7 +52,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
           api.getLoadingZones(),
           api.getIncidents(),
           api.getPredictions(),
-          api.getTrends(),
         ]);
         setKpis(kpiData);
         setZones(zoneData);
@@ -77,7 +60,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
         setLoadingZones(lzData);
         setIncidents(incData);
         setPredictions(predData);
-        setTrends(trendData);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {
@@ -85,356 +67,310 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
       }
     }
     loadData();
-    const interval = setInterval(loadData, 10000);
+    const interval = setInterval(loadData, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Merge context sectors with zone data if needed
-  const displayZones: ZoneModel[] = zones.length > 0 ? zones.map(z => {
-    const matchingSector = sectors.find(s => s.id === z.id || s.name.includes(z.name));
-    if (matchingSector) {
-      return {
-        ...z,
-        pressure_score: matchingSector.pressure,
-        pressure_class: (matchingSector.pressure > 80 ? 'Critical' : matchingSector.pressure > 60 ? 'High' : 'Moderate') as PressureClass
-      };
-    }
-    return z;
-  }) : [];
+  if (loading && !kpis) {
+    return <SkeletonPage rows={3} />;
+  }
 
-  const selectedZone = displayZones.find((z) => z.id === selectedZoneId) || displayZones[0] || zones[0];
+  const selectedZone = zones.find((z) => z.id === selectedZoneId) || zones[0];
   const selectedPred = predictions.find((p) => p.zone_id === selectedZoneId) || predictions[0];
 
-  const CustomChartTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-white border border-slate-200 rounded-xl p-3 text-xs shadow-lg">
-        <p className="text-slate-500 font-medium mb-1 font-mono">{label}</p>
-        {payload.map((p: any, i: number) => (
-          <p key={i} style={{ color: p.color || '#059669' }} className="font-mono text-xs">
-            {p.name}: <strong className="text-slate-900">{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}</strong>
-          </p>
-        ))}
-      </div>
-    );
-  };
-
   return (
-    <div className="space-y-8 max-w-[1750px] mx-auto animate-fadeIn">
-      {/* 1. Top KPI Row */}
-      <KPICards kpis={kpis} loading={loading} />
-
-      {/* 2. Main Center Grid: Map (7 cols) + AI Live Insights & Zone HUD (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Map Container */}
-        <div className="lg:col-span-7 flex flex-col space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center space-x-2.5">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono flex items-center gap-2">
-                <span>METROPOLITAN DIGITAL-TWIN GIS</span>
-                <span className="text-[10px] text-emerald-800 font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200">
-                  REAL-TIME 100Hz
-                </span>
-                {activeBlockages.length > 1 && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-bold animate-pulse">
-                    {activeBlockages.length} SURGE BLOCKAGES DETECTED
-                  </span>
-                )}
-              </h2>
-            </div>
-            <div className="text-xs text-slate-500 hidden sm:block font-mono">
-              Click any sector to inspect multi-factor pressure
-            </div>
+    <div className="space-y-7 max-w-[1700px] mx-auto animate-fadeIn">
+      {/* 1. Dashboard Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-slate-200">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-mono uppercase">
+              CityFlow Control Center
+            </h1>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+              OPERATIONAL INTELLIGENCE
+            </span>
           </div>
-          <CityDigitalTwinMap
-            zones={displayZones.length > 0 ? displayZones : zones}
-            roads={roads}
-            vehicles={vehicles}
-            loadingZones={loadingZones}
-            incidents={incidents}
-            selectedZoneId={selectedZoneId}
-            onSelectZone={setSelectedZoneId}
-            heightClass="h-[560px]"
-          />
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
+            Real-time and predictive intelligence for Delhi NCR mobility.
+          </p>
         </div>
 
-        {/* Right AI Predictions & Zone Inspector Panel */}
-        <div className="lg:col-span-5 flex flex-col space-y-6">
-          {/* AI Live Predictions & Risk Alert Card */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between space-y-5 shadow-xs">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-xs uppercase tracking-wider font-mono">
-                  <BrainCircuit className="w-4 h-4 text-emerald-600" />
-                  <span>AI EARLY-WARNING RADAR</span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
-                  <Radio className="w-3 h-3 text-emerald-600 animate-pulse" /> 100Hz STREAM
-                </span>
+        {/* Dual AI Status Badges */}
+        <div className="flex items-center gap-3 text-xs font-mono">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-800 font-medium">
+            <BrainCircuit className="w-3.5 h-3.5 text-violet-600" />
+            <span>Chronos-2: Active</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-medium">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+            <span>XGBoost: Active</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Hero Intelligence Section */}
+      <div className="p-5 bg-white rounded-xl border border-slate-200/90 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="space-y-1 max-w-2xl">
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+              DECISION SUPPORT CORE
+            </span>
+            <SourceBadge type="REAL_API" size="xs" />
+          </div>
+          <h2 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight">
+            Urban Mobility Intelligence
+          </h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            CityFlow predicts traffic conditions and road-risk probability across Delhi NCR to support intelligent dispatching, emergency preemption, and congestion abatement.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/traffic"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all"
+          >
+            <BrainCircuit className="w-3.5 h-3.5 text-violet-400" />
+            <span>Speed Forecasts</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+          </Link>
+          <Link
+            to="/risk"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-xs transition-all"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+            <span>Road Risk Matrix</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+          </Link>
+          <Link
+            to="/model-center"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-xs transition-all"
+          >
+            <Cpu className="w-3.5 h-3.5 text-blue-600" />
+            <span>Model Center</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+          </Link>
+        </div>
+      </div>
+
+      {/* 3. Executive High-Value KPI Row */}
+      <KPICards
+        kpis={kpis}
+        predictions={predictions}
+        roads={roads}
+        incidents={incidents}
+        loading={loading}
+      />
+
+      {/* 4. Central Delhi NCR Interactive Map & Zone HUD */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Map Container (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">
+                Metropolitan GIS Digital Twin (Delhi NCR)
+              </h2>
+            </div>
+            <SourceBadge type="REAL_DATABASE" size="xs" />
+          </div>
+
+          <div className="h-[480px] w-full rounded-xl overflow-hidden border border-slate-200/90 shadow-xs relative">
+            <CityDigitalTwinMap
+              zones={zones}
+              roads={roads}
+              vehicles={vehicles}
+              loadingZones={loadingZones}
+              incidents={incidents}
+              selectedZoneId={selectedZoneId}
+              onSelectZone={(zoneId) => setSelectedZoneId(zoneId)}
+            />
+
+            {/* Clean Map Legend */}
+            <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md p-3 rounded-lg border border-slate-200 shadow-md text-[10px] font-mono space-y-1.5">
+              <div className="font-bold text-slate-700 border-b border-slate-100 pb-1">MAP LEGEND</div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-500">Traffic:</span>
+                <span className="text-emerald-700 font-bold">LOW</span>
+                <span className="text-amber-600 font-bold">MOD</span>
+                <span className="text-orange-600 font-bold">HVY</span>
+                <span className="text-rose-700 font-bold">SEV</span>
               </div>
-
-              {/* Dynamic Context Warnings from Mentor Scenario */}
-              <div className="space-y-3 text-xs mt-4">
-                {activeEarlyWarnings.map(ew => (
-                  <div
-                    key={ew.id}
-                    className={`p-3.5 rounded-xl border text-slate-800 flex items-start space-x-3 transition-all ${
-                      ew.severity === 'CRITICAL'
-                        ? 'bg-rose-50 border-rose-200 ring-1 ring-rose-300'
-                        : ew.severity === 'HIGH'
-                        ? 'bg-amber-50 border-amber-200'
-                        : 'bg-blue-50 border-blue-200'
-                    }`}
-                  >
-                    {ew.severity === 'CRITICAL' ? (
-                      <Flame className="w-4 h-4 text-rose-600 shrink-0 mt-0.5 animate-pulse" />
-                    ) : ew.severity === 'HIGH' ? (
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <Clock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                        <span>{ew.title} — {ew.zone}</span>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                          ew.severity === 'CRITICAL' ? 'bg-rose-200 text-rose-800' : 'bg-amber-200 text-amber-800'
-                        }`}>[{ew.severity}]</span>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Mitigation action: <strong className="text-slate-900">{ew.action}</strong> ({ew.time}).
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
-                {activeBlockages.length > 0 && (
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 flex items-start space-x-3">
-                    <Activity className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                        <span>Active GIS Obstructions ({activeBlockages.length})</span>
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">[MAP TELEMETRY]</span>
-                      </div>
-                      <div className="text-xs text-slate-600 mt-1 space-y-1">
-                        {activeBlockages.slice(0, 3).map((b, i) => (
-                          <p key={i} className="truncate font-mono text-[11px]">
-                            • {b.name} (<span className="text-rose-600 font-bold">+{b.delay_mins}m delay</span>)
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-500">Risk:</span>
+                <span className="text-emerald-700 font-bold">LOW</span>
+                <span className="text-amber-600 font-bold">MOD</span>
+                <span className="text-rose-700 font-bold">HIGH</span>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Selected Sector Telemetry HUD */}
+        {/* Selected Zone Telemetry & AI Inspection HUD (4 cols) */}
+        <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 flex flex-col justify-between space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                  Selected Sector Telemetry
+                </span>
+                <h3 className="text-base font-bold text-slate-900 mt-0.5">
+                  {selectedZone?.name || 'Sector Overview'}
+                </h3>
+                <span className="text-xs font-mono text-slate-500">{selectedZone?.id} • {selectedZone?.category}</span>
+              </div>
+              <SourceBadge type="REAL_API" size="xs" />
+            </div>
+
             {selectedZone && (
-              <div className="pt-4 border-t border-slate-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-mono text-slate-400 block tracking-wider font-semibold">SELECTED SECTOR</span>
-                    <span className="font-bold text-base text-slate-900 flex items-center gap-2">
-                      <span className="text-emerald-700 font-mono">{selectedZone.id}</span>
-                      <span>{selectedZone.name}</span>
-                    </span>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Observed Speed</span>
+                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.avg_speed_kmh}</span>
+                  <span className="text-xs text-slate-500 ml-1">km/h</span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Road Saturation</span>
+                  <span className="text-xl font-bold font-mono text-slate-900">
+                    {Math.round(selectedZone.road_utilization * 100)}%
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Logistics Demand</span>
+                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.active_deliveries}</span>
+                  <span className="text-xs text-slate-500 ml-1">orders</span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Active Vehicles</span>
+                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.active_vehicles}</span>
+                  <span className="text-xs text-slate-500 ml-1">nodes</span>
+                </div>
+              </div>
+            )}
+
+            {/* AI Forward Forecast Preview for Selected Zone */}
+            {selectedPred && (
+              <div className="p-4 rounded-lg bg-violet-50/50 border border-violet-100 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-violet-900 flex items-center gap-1.5 font-mono">
+                    <BrainCircuit className="w-3.5 h-3.5 text-violet-600" />
+                    Chronos-2 Speed Trajectory
+                  </span>
+                  <SourceBadge type="ML_PREDICTION" size="xs" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
+                  <div className="p-2 bg-white rounded border border-violet-200">
+                    <span className="text-slate-400 text-[10px] block">+15m</span>
+                    <span className="font-bold text-violet-800">{selectedPred.pred_15m_pct}%</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-mono text-slate-400 block tracking-wider font-semibold">PRESSURE SCORE</span>
-                    <span
-                      className={`font-mono font-bold text-xs px-2.5 py-1 rounded-full border inline-block mt-0.5 ${
-                        selectedZone.pressure_score > 80
-                          ? 'bg-rose-100 text-rose-800 border-rose-200 ring-1 ring-rose-300'
-                          : selectedZone.pressure_score > 60
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      }`}
-                    >
-                      {selectedZone.pressure_score}/100 ({selectedZone.pressure_class})
-                    </span>
+                  <div className="p-2 bg-white rounded border border-violet-200">
+                    <span className="text-slate-400 text-[10px] block">+30m</span>
+                    <span className="font-bold text-violet-800">{selectedPred.pred_30m_pct}%</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-violet-200">
+                    <span className="text-slate-400 text-[10px] block">+60m</span>
+                    <span className="font-bold text-violet-800">{selectedPred.pred_60m_pct}%</span>
                   </div>
                 </div>
-
-                {/* Metric Gauges */}
-                <div className="grid grid-cols-2 gap-2.5 text-xs font-mono pt-1">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-slate-500 text-[11px] block">Road Util</span>
-                    <span className="font-bold text-slate-900 text-sm">{Math.round((selectedZone.road_utilization || 0.72) * 100)}%</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-slate-500 text-[11px] block">Logistics Demand</span>
-                    <span className="font-bold text-amber-600 text-sm">{selectedZone.logistics_demand || 140} idx</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-slate-500 text-[11px] block">Avg Velocity</span>
-                    <span className="font-bold text-emerald-700 text-sm">{selectedZone.avg_speed_kmh || 34.2} km/h</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-slate-500 text-[11px] block">Bay Saturation</span>
-                    <span className="font-bold text-slate-800 text-sm">
-                      {selectedZone.loading_bay_occupied || 10}/{selectedZone.loading_bay_capacity || 12}
-                    </span>
-                  </div>
-                </div>
-
-                {/* ML Forecast Multi-Horizon */}
-                {selectedPred && (
-                  <div className="pt-2 space-y-2 text-xs font-mono">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold flex items-center justify-between">
-                      <span>MULTI-HORIZON FORECAST</span>
-                      <span className="text-emerald-700">RandomForest Engine</span>
-                    </span>
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <span className="text-slate-500 text-[10px] block">+15 min</span>
-                        <span className="font-bold text-slate-900 text-sm">{selectedPred.pred_15m_pct}%</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <span className="text-slate-500 text-[10px] block">+30 min</span>
-                        <span className="font-bold text-amber-600 text-sm">{selectedPred.pred_30m_pct}%</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <span className="text-slate-500 text-[10px] block">+60 min</span>
-                        <span className="font-bold text-rose-600 text-sm">{selectedPred.pred_60m_pct}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
+
+          <Link
+            to="/traffic"
+            className="flex items-center justify-between w-full p-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all font-mono"
+          >
+            <span>Open Dedicated Speed Forecaster</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
 
-      {/* 3. Bottom Row: 2x2 Telemetry Analytics Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Chart 1: Traffic Volume Trend */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
+      {/* 5. High-Risk Corridors & Active Incidents Split Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* High-Risk Corridors (XGBoost Preview) */}
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" /> METROPOLITAN TRAFFIC VOLUME OVER TIME
-            </span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">vph</span>
-          </div>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trends?.traffic_trend || [
-                { time: '14:00', traffic_volume: 3200 },
-                { time: '15:00', traffic_volume: 3800 },
-                { time: '16:00', traffic_volume: 4600 },
-                { time: '17:00', traffic_volume: 5200 },
-                { time: '18:00', traffic_volume: activeScenario === 'RUSH_HOUR' ? 6800 : 5400 }
-              ]}>
-                <defs>
-                  <linearGradient id="colorTraffic" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<CustomChartTooltip />} />
-                <Area type="monotone" dataKey="traffic_volume" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTraffic)" name="Traffic Volume" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 2: Logistics Demand Spikes */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono flex items-center gap-2">
-              <Warehouse className="w-4 h-4 text-amber-500" /> COMMERCIAL DELIVERY ORDERS / HOUR
-            </span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">Orders/hr</span>
-          </div>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trends?.logistics_demand_trend || [
-                { time: '14:00', parcel_orders: 140 },
-                { time: '15:00', parcel_orders: 180 },
-                { time: '16:00', parcel_orders: 260 },
-                { time: '17:00', parcel_orders: 310 },
-                { time: '18:00', parcel_orders: activeScenario === 'RUSH_HOUR' ? 420 : 290 }
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<CustomChartTooltip />} />
-                <Bar dataKey="parcel_orders" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Orders" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 3: CO2 Emission Reductions */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono flex items-center gap-2">
-              <Zap className="w-4 h-4 text-emerald-600" /> CUMULATIVE CO2 ABATED BY GREEN ROUTING
-            </span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">kg CO2</span>
-          </div>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trends?.co2_savings_trend || [
-                { time: '14:00', co2_saved_kg: 420 },
-                { time: '15:00', co2_saved_kg: 680 },
-                { time: '16:00', co2_saved_kg: 920 },
-                { time: '17:00', co2_saved_kg: 1180 },
-                { time: '18:00', co2_saved_kg: 1420 }
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip content={<CustomChartTooltip />} />
-                <Line type="monotone" dataKey="co2_saved_kg" stroke="#059669" strokeWidth={3} dot={{ r: 4, fill: '#059669', stroke: '#ffffff', strokeWidth: 2 }} name="CO2 Saved (kg)" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 4: Sector Pressure Inspector Selector */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-emerald-600" /> URBAN SECTOR PRESSURE RANKING
-            </span>
-            <Link to="/map" className="text-xs font-mono font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors">
-              Full Map <ChevronRight className="w-3.5 h-3.5" />
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-amber-600" />
+                High-Risk Corridors (XGBoost Ranked)
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">Corridors with elevated hazard probability</p>
+            </div>
+            <Link to="/risk" className="text-xs font-bold font-mono text-slate-900 hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-52 overflow-y-auto pr-1 text-xs font-mono">
-            {sectors.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => setSelectedZoneId(s.id)}
-                className={`p-3 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-150 ${
-                  selectedZoneId === s.id
-                    ? 'bg-emerald-50 border border-emerald-300 text-slate-900 shadow-xs ring-1 ring-emerald-400/40'
-                    : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <div className="truncate max-w-[130px] text-xs font-sans font-semibold">
-                  <span className="text-emerald-700 font-mono mr-1.5 font-bold">{s.id}</span>
-                  {s.name}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 uppercase font-mono text-[10px]">
+                <tr>
+                  <th className="py-2 px-2.5">Corridor</th>
+                  <th className="py-2 px-2.5">Speed</th>
+                  <th className="py-2 px-2.5">Risk Score</th>
+                  <th className="py-2 px-2.5">Classification</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {roads.slice(0, 5).map((r) => {
+                  const riskScore = Math.min(96, Math.max(20, Math.round((r.congestion_level || 0.5) * 60 + ((r.free_flow_speed_kmh - r.current_speed_kmh) / (r.free_flow_speed_kmh || 50)) * 40)));
+                  const isHigh = riskScore > 65;
+                  const rowStyle = isHigh ? 'text-rose-600' : 'text-amber-600';
+                  const badgeStyle = isHigh ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200';
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-50">
+                      <td className="py-2.5 px-2.5 font-semibold text-slate-900">{r.name}</td>
+                      <td className="py-2.5 px-2.5 text-slate-700">{r.current_speed_kmh} km/h</td>
+                      <td className={'py-2.5 px-2.5 font-bold ' + rowStyle}>
+                        {riskScore}
+                      </td>
+                      <td className="py-2.5 px-2.5">
+                        <span className={'text-[9px] font-bold px-1.5 py-0.2 rounded border ' + badgeStyle}>
+                          {isHigh ? 'HIGH' : 'MODERATE'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Live Incidents & Road Hazards */}
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                Active Road Incidents
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">Reported physical disruptions</p>
+            </div>
+            <Link to="/incidents" className="text-xs font-bold font-mono text-slate-900 hover:underline flex items-center gap-0.5">
+              <span>Manage</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="space-y-2.5">
+            {incidents.slice(0, 3).map((inc) => (
+              <div key={inc.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                      {inc.severity}
+                    </span>
+                    <span className="font-bold text-xs text-slate-900">{inc.title}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-normal">{inc.description}</p>
                 </div>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold font-mono ${
-                    s.pressure > 80
-                      ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                      : s.pressure > 60
-                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                      : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                  }`}
-                >
-                  {s.pressure}%
-                </span>
+                <span className="text-[10px] font-mono text-slate-400">{inc.start_time}</span>
               </div>
             ))}
           </div>
@@ -443,4 +379,3 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
     </div>
   );
 };
-

@@ -1,131 +1,190 @@
-import React from 'react';
+﻿import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  BrainCircuit,
+  ShieldAlert,
   Map as MapIcon,
   Truck,
-  Navigation,
-  CalendarClock,
-  Warehouse,
-  BrainCircuit,
+  AlertTriangle,
+  BarChart3,
+  Database,
+  Cpu,
+  Settings,
   SlidersHorizontal,
   Building2,
-  BarChart3,
-  ShieldAlert,
-  Settings,
 } from 'lucide-react';
 
 interface SidebarProps {
-  isEmergencyActive: boolean;
+  isEmergencyActive?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isEmergencyActive }) => {
-  const sections = [
+export const Sidebar: React.FC<SidebarProps> = ({
+  isEmergencyActive = false,
+  isOpen = false,
+  onClose,
+}) => {
+  const primaryNavItems = [
+    { name: '1. Overview', path: '/', icon: LayoutDashboard },
+    { name: '2. Traffic Intelligence', path: '/traffic', icon: BrainCircuit, badge: 'Chronos-2' },
+    { name: '3. Road Risk', path: '/risk', icon: ShieldAlert, badge: 'XGBoost' },
+    { name: '4. City Map', path: '/map', icon: MapIcon },
+    { name: '5. Logistics', path: '/logistics', icon: Truck },
+    { name: '6. Incidents', path: '/incidents', icon: AlertTriangle },
+    { name: '7. Analytics', path: '/analytics', icon: BarChart3 },
+    { name: '8. Data Sources', path: '/data-sources', icon: Database },
+    { name: '9. Model Center', path: '/model-center', icon: Cpu },
+    { name: '10. Settings', path: '/settings', icon: Settings },
+  ];
+
+  const secondaryModules = [
+    { name: 'What-If Simulation', path: '/simulator', icon: SlidersHorizontal, badge: 'SIM' },
+    { name: 'Infrastructure Recs', path: '/recommendations', icon: Building2 },
     {
-      title: 'City Command',
-      items: [
-        { name: 'Overview Dashboard', path: '/', icon: LayoutDashboard },
-        { name: 'Metropolitan GIS Map', path: '/map', icon: MapIcon },
-        { name: 'Fleet Telematics', path: '/fleet', icon: Truck },
-      ],
-    },
-    {
-      title: 'ML Platform & Data Brain',
-      items: [
-        { name: 'ML Intelligence', path: '/ml-models', icon: BrainCircuit },
-        { name: 'Data Quality & Ingestion', path: '/data-quality', icon: Building2 },
-      ],
-    },
-    {
-      title: 'Optimization & AI',
-      items: [
-        { name: 'Smart Routing', path: '/routes', icon: Navigation },
-        { name: 'Dynamic Delivery Slots', path: '/slots', icon: CalendarClock },
-        { name: 'Smart Loading Bays', path: '/loading-zones', icon: Warehouse },
-        { name: 'Predictive Congestion', path: '/predictions', icon: BrainCircuit },
-        { name: 'What-If Simulation', path: '/simulator', icon: SlidersHorizontal },
-      ],
-    },
-    {
-      title: 'Decisions & Governance',
-      items: [
-        { name: 'Infrastructure Recs', path: '/recommendations', icon: Building2 },
-        { name: 'ESG & Impact Analytics', path: '/analytics', icon: BarChart3 },
-        {
-          name: 'Emergency Green Wave',
-          path: '/emergency',
-          icon: ShieldAlert,
-          alert: isEmergencyActive,
-          badge: isEmergencyActive ? 'ACTIVE' : undefined,
-        },
-        { name: 'Settings & Weights', path: '/settings', icon: Settings },
-      ],
+      name: 'Emergency Priority',
+      path: '/emergency',
+      icon: ShieldAlert,
+      alert: isEmergencyActive,
+      badge: isEmergencyActive ? 'ACTIVE' : undefined,
     },
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between select-none h-[calc(100vh-4rem)] sticky top-16 z-40 overflow-y-auto shadow-xs">
-      <div className="p-4 space-y-6">
-        {sections.map((section) => (
-          <div key={section.title} className="space-y-1.5">
-            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-              {section.title}
+    <>
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden"
+        />
+      )}
+
+      <aside
+        className={'fixed lg:sticky top-16 z-40 h-[calc(100vh-4rem)] w-64 bg-white border-r border-slate-200/90 flex flex-col justify-between select-none overflow-y-auto transition-transform duration-200 ease-in-out ' + (isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0')}
+      >
+        <div className="p-3.5 space-y-5">
+          <div>
+            <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono flex items-center justify-between">
+              <span>Primary Modules</span>
+              <span className="text-[9px] text-slate-400 font-normal">10 Modules</span>
             </div>
 
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
+            <nav className="space-y-0.5">
+              {primaryNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    onClick={onClose}
                     className={({ isActive }) =>
-                      `flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
+                      'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ' + (
                         isActive
-                          ? 'border-l-4 border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold shadow-xs'
-                          : item.alert
-                          ? 'border-l-4 border-rose-500 bg-rose-50 text-rose-700'
-                          : 'border-l-4 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`
+                          ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      )
                     }
                   >
-                    <div className="flex items-center space-x-2.5">
-                      <Icon
-                        className={`w-4 h-4 transition-colors ${
-                          item.alert ? 'text-rose-500' : 'text-slate-400 group-hover:text-emerald-600'
-                        }`}
-                      />
-                      <span>{item.name}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
-                        {item.badge}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        <div className="flex items-center space-x-2.5 truncate">
+                          <Icon
+                            className={'w-4 h-4 flex-shrink-0 ' + (isActive ? 'text-emerald-400' : 'text-slate-400')}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        {item.badge && (
+                          <span
+                            className={'text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded ' + (
+                              isActive
+                                ? 'bg-slate-800 text-emerald-300 border border-slate-700'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            )}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 );
               })}
-            </div>
+            </nav>
           </div>
-        ))}
-      </div>
 
-      {/* Simplified Status Footer */}
-      <div className="p-4 m-3 rounded-2xl bg-emerald-50/60 border border-emerald-100 text-xs">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[11px] font-semibold text-emerald-900 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
-            </span>
-            Digital Twin Active
-          </span>
-          <span className="text-emerald-700 font-mono text-[11px] font-bold">100Hz</span>
+          <div>
+            <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+              Advanced Operations
+            </div>
+
+            <nav className="space-y-0.5">
+              {secondaryModules.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ' + (
+                        isActive
+                          ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                          : item.alert
+                          ? 'bg-rose-50 text-rose-700 font-semibold border border-rose-200'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className="flex items-center space-x-2.5 truncate">
+                          <Icon
+                            className={'w-4 h-4 flex-shrink-0 ' + (
+                              isActive
+                                ? 'text-emerald-400'
+                                : item.alert
+                                ? 'text-rose-600 animate-pulse'
+                                : 'text-slate-400'
+                            )}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        {item.badge && (
+                          <span
+                            className={'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ' + (
+                              item.alert
+                                ? 'bg-rose-600 text-white'
+                                : isActive
+                                ? 'bg-slate-800 text-emerald-300'
+                                : 'bg-slate-100 text-slate-600'
+                            )}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
         </div>
-        <p className="text-[11px] text-slate-500 leading-relaxed">
-          OR-Tools + Random Forest ML online
-        </p>
-      </div>
-    </aside>
+
+        <div className="p-3 m-3 rounded-xl bg-slate-50 border border-slate-200/90 text-xs">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+              CITYFLOW INTELLIGENCE
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono">v2.4</span>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-normal">
+            Predicts traffic with <span className="font-semibold text-slate-700">Chronos-2</span> & road-risk with <span className="font-semibold text-slate-700">XGBoost</span>.
+          </p>
+        </div>
+      </aside>
+    </>
   );
 };
