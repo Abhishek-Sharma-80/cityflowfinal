@@ -241,9 +241,9 @@ export const CityDigitalTwinMap: React.FC<CityDigitalTwinMapProps> = ({
                   <Tooltip sticky>
                     <div className="text-xs p-1">
                       <div className="font-bold text-slate-900">{z.name}</div>
-                      <div>Pressure: <span className="font-bold font-mono" style={{ color }}>{z.pressure_score}/100 ({z.pressure_class})</span></div>
+                      <div>Pressure: <span className="font-bold font-mono" style={{ color }}>{typeof z.pressure_score === 'number' ? z.pressure_score.toFixed(0) : z.pressure_score}/100 ({z.pressure_class})</span></div>
                       <div>Logistics Demand: {z.logistics_demand} index</div>
-                      <div>Avg Speed: {z.avg_speed_kmh} km/h</div>
+                      <div>Avg Speed: {typeof z.avg_speed_kmh === 'number' ? z.avg_speed_kmh.toFixed(1) : z.avg_speed_kmh} km/h</div>
                     </div>
                   </Tooltip>
                 </Polygon>
@@ -275,7 +275,9 @@ export const CityDigitalTwinMap: React.FC<CityDigitalTwinMapProps> = ({
                     </div>
                     <div className="flex justify-between gap-4">
                       <span className="text-slate-500">Speed:</span>
-                      <span className="font-mono text-slate-800">{r.current_speed_kmh} / {r.free_flow_speed_kmh} km/h</span>
+                      <span className="font-mono text-slate-800">
+                        {typeof r.current_speed_kmh === 'number' ? r.current_speed_kmh.toFixed(1) : r.current_speed_kmh} / {typeof r.free_flow_speed_kmh === 'number' ? r.free_flow_speed_kmh.toFixed(1) : r.free_flow_speed_kmh} km/h
+                      </span>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span className="text-slate-500">Status:</span>
@@ -415,7 +417,7 @@ export const CityDigitalTwinMap: React.FC<CityDigitalTwinMapProps> = ({
                   <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200">
                     <div>
                       <span className="text-slate-400 text-[10px]">Speed:</span>
-                      <div className="font-mono font-bold text-slate-800">{v.current_speed_kmh} km/h</div>
+                      <div className="font-mono font-bold text-slate-800">{typeof v.current_speed_kmh === 'number' ? v.current_speed_kmh.toFixed(1) : v.current_speed_kmh} km/h</div>
                     </div>
                     <div>
                       <span className="text-slate-400 text-[10px]">Battery/Fuel:</span>

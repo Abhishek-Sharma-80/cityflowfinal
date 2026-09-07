@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MLModelRegistryItem, MLHealthModel, RoadSegmentModel, MLPredictResponseModel } from '../types';
 import { api } from '../services/api';
 import { SourceBadge } from '../components/common/SourceBadge';
@@ -259,7 +259,7 @@ export const MLIntelligencePage: React.FC = () => {
             >
               {roads.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.id}: {r.name} ({r.current_speed_kmh} km/h)
+                  {r.id}: {r.name} ({typeof r.current_speed_kmh === 'number' ? r.current_speed_kmh.toFixed(1) : r.current_speed_kmh} km/h)
                 </option>
               ))}
             </select>
@@ -299,7 +299,9 @@ export const MLIntelligencePage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-2 bg-white rounded border border-slate-200">
                 <span className="text-slate-400 text-[10px] block">Predicted Speed</span>
-                <span className="text-lg font-bold text-violet-700">{playgroundResult.predicted_speed_kmh} km/h</span>
+                <span className="text-lg font-bold text-violet-700">
+                  {typeof playgroundResult.predicted_speed_kmh === 'number' ? playgroundResult.predicted_speed_kmh.toFixed(1) : playgroundResult.predicted_speed_kmh} km/h
+                </span>
               </div>
               <div className="p-2 bg-white rounded border border-slate-200">
                 <span className="text-slate-400 text-[10px] block">Predicted Congestion</span>

@@ -71,6 +71,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
   const selectedZone = zones.find((z) => z.id === selectedZoneId) || zones[0] || mockZones[0];
   const selectedPred = predictions.find((p) => p.zone_id === selectedZoneId) || predictions[0] || mockPredictions[0];
 
+  const formatSpeed = (val: number | string | undefined) => {
+    if (val === undefined || val === null) return '24.0';
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return isNaN(num) ? '24.0' : num.toFixed(1);
+  };
+
+  const formatUtilization = (val: number | string | undefined) => {
+    if (val === undefined || val === null) return 75;
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return 75;
+    return num <= 1 ? Math.round(num * 100) : Math.min(100, Math.round(num));
+  };
+
   return (
     <div className="space-y-7 max-w-[1700px] mx-auto animate-fadeIn">
       {/* 1. Dashboard Top Header */}
@@ -202,11 +215,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
         <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 flex flex-col justify-between space-y-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
+              <div className="truncate mr-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                   Selected Sector Telemetry
                 </span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 mt-0.5 truncate">
                   {selectedZone?.name || 'Cyber City Hub'}
                 </h3>
                 <span className="text-xs font-mono text-slate-500">{selectedZone?.id} • {selectedZone?.category}</span>
@@ -216,26 +229,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
 
             {selectedZone && (
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Observed Speed</span>
-                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.avg_speed_kmh}</span>
-                  <span className="text-xs text-slate-500 ml-1">km/h</span>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase truncate">Observed Speed</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-2xl font-bold font-mono text-slate-900 truncate">
+                      {formatSpeed(selectedZone.avg_speed_kmh)}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500">km/h</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Road Saturation</span>
-                  <span className="text-xl font-bold font-mono text-slate-900">
-                    {Math.round(selectedZone.road_utilization * 100)}%
-                  </span>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase truncate">Road Saturation</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-2xl font-bold font-mono text-slate-900 truncate">
+                      {formatUtilization(selectedZone.road_utilization)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Logistics Demand</span>
-                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.active_deliveries}</span>
-                  <span className="text-xs text-slate-500 ml-1">orders</span>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase truncate">Logistics Demand</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-2xl font-bold font-mono text-slate-900 truncate">
+                      {selectedZone.active_deliveries || 120}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500">orders</span>
+                  </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Active Vehicles</span>
-                  <span className="text-xl font-bold font-mono text-slate-900">{selectedZone.active_vehicles}</span>
-                  <span className="text-xs text-slate-500 ml-1">nodes</span>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase truncate">Active Vehicles</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-2xl font-bold font-mono text-slate-900 truncate">
+                      {selectedZone.active_vehicles || 85}
+                    </span>
+                    <span className="text-xs font-mono text-slate-500">nodes</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -253,15 +280,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
                 <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
                   <div className="p-2 bg-white rounded border border-violet-200">
                     <span className="text-slate-400 text-[10px] block">+15m</span>
-                    <span className="font-bold text-violet-800">{selectedPred.pred_15m_pct}%</span>
+                    <span className="font-bold text-violet-800">{Math.round(selectedPred.pred_15m_pct || 75)}%</span>
                   </div>
                   <div className="p-2 bg-white rounded border border-violet-200">
                     <span className="text-slate-400 text-[10px] block">+30m</span>
-                    <span className="font-bold text-violet-800">{selectedPred.pred_30m_pct}%</span>
+                    <span className="font-bold text-violet-800">{Math.round(selectedPred.pred_30m_pct || 80)}%</span>
                   </div>
                   <div className="p-2 bg-white rounded border border-violet-200">
                     <span className="text-slate-400 text-[10px] block">+60m</span>
-                    <span className="font-bold text-violet-800">{selectedPred.pred_60m_pct}%</span>
+                    <span className="font-bold text-violet-800">{Math.round(selectedPred.pred_60m_pct || 65)}%</span>
                   </div>
                 </div>
               </div>
@@ -314,8 +341,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
                   const badgeStyle = isHigh ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200';
                   return (
                     <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 px-2.5 font-semibold text-slate-900 font-sans">{r.name}</td>
-                      <td className="py-2.5 px-2.5 text-slate-700">{r.current_speed_kmh} km/h</td>
+                      <td className="py-2.5 px-2.5 font-semibold text-slate-900 font-sans truncate max-w-[160px]">{r.name}</td>
+                      <td className="py-2.5 px-2.5 text-slate-700">{formatSpeed(r.current_speed_kmh)} km/h</td>
                       <td className={'py-2.5 px-2.5 font-bold ' + rowStyle}>
                         {riskScore}
                       </td>
@@ -350,17 +377,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
 
           <div className="space-y-2.5">
             {incidents.slice(0, 3).map((inc) => (
-              <div key={inc.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-start justify-between">
-                <div className="space-y-0.5">
+              <div key={inc.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-start justify-between gap-2">
+                <div className="space-y-0.5 truncate">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
                       {inc.severity}
                     </span>
-                    <span className="font-bold text-xs text-slate-900">{inc.title}</span>
+                    <span className="font-bold text-xs text-slate-900 truncate">{inc.title}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-normal">{inc.description}</p>
+                  <p className="text-[11px] text-slate-500 leading-normal line-clamp-2">{inc.description}</p>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">{inc.start_time}</span>
+                <span className="text-[10px] font-mono text-slate-400 shrink-0">{inc.start_time}</span>
               </div>
             ))}
           </div>

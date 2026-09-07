@@ -278,7 +278,9 @@ export const FleetDeliveriesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 text-slate-700">{v.current_speed_kmh} km/h</td>
+                      <td className="p-4 text-slate-700">
+                        {typeof v.current_speed_kmh === 'number' ? v.current_speed_kmh.toFixed(1) : v.current_speed_kmh} km/h
+                      </td>
                       <td className="p-4 font-semibold text-slate-900 truncate max-w-[180px]">{v.destination}</td>
                       <td className="p-4 text-emerald-700 font-bold">{v.assigned_bay || 'BAY-01'}</td>
                       <td className="p-4 text-slate-600">{v.cargo_kg} kg</td>

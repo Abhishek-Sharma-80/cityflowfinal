@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoadSegmentModel, ZonePredictionModel, MLPredictResponseModel } from '../types';
 import { api } from '../services/api';
 import { mockRoads, mockPredictions } from '../services/mockData';
@@ -170,11 +170,13 @@ export const TrafficIntelligencePage: React.FC = () => {
             <SourceBadge type="REAL_API" size="xs" />
           </div>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-3xl font-bold font-mono text-slate-900">{selectedRoad.current_speed_kmh}</span>
+            <span className="text-3xl font-bold font-mono text-slate-900">
+              {typeof selectedRoad.current_speed_kmh === 'number' ? selectedRoad.current_speed_kmh.toFixed(1) : selectedRoad.current_speed_kmh}
+            </span>
             <span className="text-xs font-mono text-slate-500">km/h</span>
           </div>
           <div className="mt-2 text-xs text-slate-500 flex items-center justify-between pt-2 border-t border-slate-100 font-mono">
-            <span>Free-flow: {selectedRoad.free_flow_speed_kmh} km/h</span>
+            <span>Free-flow: {typeof selectedRoad.free_flow_speed_kmh === 'number' ? selectedRoad.free_flow_speed_kmh.toFixed(1) : selectedRoad.free_flow_speed_kmh} km/h</span>
             <span className={selectedRoad.current_speed_kmh < 30 ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>
               {selectedRoad.status}
             </span>
@@ -192,7 +194,11 @@ export const TrafficIntelligencePage: React.FC = () => {
           </div>
           <div className="flex items-baseline gap-1.5 mt-1">
             <span className="text-3xl font-bold font-mono text-violet-900">
-              {predicting ? '...' : (livePrediction?.predicted_speed_kmh ?? predSpeed15)}
+              {predicting
+                ? '...'
+                : typeof (livePrediction?.predicted_speed_kmh ?? predSpeed15) === 'number'
+                ? Number(livePrediction?.predicted_speed_kmh ?? predSpeed15).toFixed(1)
+                : (livePrediction?.predicted_speed_kmh ?? predSpeed15)}
             </span>
             <span className="text-xs font-mono text-violet-600">km/h</span>
           </div>
@@ -234,7 +240,7 @@ export const TrafficIntelligencePage: React.FC = () => {
           </div>
           <div className="flex items-baseline gap-1.5 mt-1">
             <span className="text-3xl font-bold font-mono text-rose-600">
-              -{Math.max(0, freeFlow - selectedRoad.current_speed_kmh)}
+              -{Math.max(0, freeFlow - selectedRoad.current_speed_kmh).toFixed(1)}
             </span>
             <span className="text-xs font-mono text-slate-500">km/h deficit</span>
           </div>

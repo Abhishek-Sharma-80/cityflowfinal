@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoadSegmentModel, ZonePredictionModel, IncidentModel } from '../types';
 import { api } from '../services/api';
 import { mockRoads, mockPredictions, mockIncidents } from '../services/mockData';
@@ -282,7 +282,7 @@ export const RoadRiskPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-slate-700">{item.probability}</td>
                       <td className="py-3 px-3">
-                        <div className="text-slate-800">{item.road.current_speed_kmh} km/h</div>
+                        <div className="text-slate-800">{typeof item.road.current_speed_kmh === 'number' ? item.road.current_speed_kmh.toFixed(1) : item.road.current_speed_kmh} km/h</div>
                         <div className="text-[10px] text-slate-400">Cap: {item.road.capacity_vph} vph</div>
                       </td>
                       <td className="py-3 px-3">
@@ -355,7 +355,7 @@ export const RoadRiskPage: React.FC = () => {
                     <div>
                       <div className="font-semibold text-slate-800">Traffic Speed Deficit</div>
                       <div className="text-[11px] text-slate-500">
-                        {activeSelected.road.free_flow_speed_kmh - activeSelected.road.current_speed_kmh} km/h below standard
+                        {Math.max(0, activeSelected.road.free_flow_speed_kmh - activeSelected.road.current_speed_kmh).toFixed(1)} km/h below standard
                       </div>
                     </div>
                     <span className="font-mono font-bold text-slate-700">35% Impact</span>

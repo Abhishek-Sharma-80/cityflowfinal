@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VehicleModel, DeliveryRequestModel, LoadingZoneModel, SlotOptimizationResult, RouteOptionModel } from '../types';
 import { api } from '../services/api';
 import { SourceBadge } from '../components/common/SourceBadge';
@@ -179,7 +179,9 @@ export const LogisticsPage: React.FC = () => {
                           {v.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-800">{v.current_speed_kmh} km/h</td>
+                      <td className="py-2.5 px-3 text-slate-800">
+                        {typeof v.current_speed_kmh === 'number' ? v.current_speed_kmh.toFixed(1) : v.current_speed_kmh} km/h
+                      </td>
                       <td className="py-2.5 px-3 font-bold text-slate-900">{v.fuel_or_battery_pct}%</td>
                       <td className="py-2.5 px-3 text-slate-700">
                         {Math.round((v.current_payload_kg / (v.max_payload_kg || 1000)) * 100)}% ({v.current_payload_kg} kg)
