@@ -9,10 +9,10 @@ import {
   ZonePredictionModel,
 } from '../types';
 import { api } from '../services/api';
+import { mockZones, mockRoads, mockIncidents, mockPredictions, mockKPIs } from '../services/mockData';
 import { KPICards } from '../components/common/KPICards';
 import { CityDigitalTwinMap } from '../components/map/CityDigitalTwinMap';
 import { SourceBadge } from '../components/common/SourceBadge';
-import { SkeletonPage } from '../components/common/Skeleton';
 import {
   BrainCircuit,
   ShieldAlert,
@@ -31,15 +31,14 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liveSnapshot, addToast: _addToast }) => {
-  const [kpis, setKpis] = useState<KPIDashboardModel | null>(null);
-  const [zones, setZones] = useState<ZoneModel[]>([]);
-  const [roads, setRoads] = useState<RoadSegmentModel[]>([]);
+  const [kpis, setKpis] = useState<KPIDashboardModel>(mockKPIs);
+  const [zones, setZones] = useState<ZoneModel[]>(mockZones);
+  const [roads, setRoads] = useState<RoadSegmentModel[]>(mockRoads);
   const [vehicles, setVehicles] = useState<VehicleModel[]>([]);
   const [loadingZones, setLoadingZones] = useState<LoadingZoneModel[]>([]);
-  const [incidents, setIncidents] = useState<IncidentModel[]>([]);
-  const [predictions, setPredictions] = useState<ZonePredictionModel[]>([]);
+  const [incidents, setIncidents] = useState<IncidentModel[]>(mockIncidents);
+  const [predictions, setPredictions] = useState<ZonePredictionModel[]>(mockPredictions);
   const [selectedZoneId, setSelectedZoneId] = useState<string>('Z-01');
-  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function loadData() {
@@ -53,17 +52,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
           api.getIncidents(),
           api.getPredictions(),
         ]);
-        setKpis(kpiData);
-        setZones(zoneData);
-        setRoads(roadData);
-        setVehicles(vehData);
-        setLoadingZones(lzData);
-        setIncidents(incData);
-        setPredictions(predData);
+        if (kpiData) setKpis(kpiData);
+        if (zoneData && zoneData.length > 0) setZones(zoneData);
+        if (roadData && roadData.length > 0) setRoads(roadData);
+        if (vehData && vehData.length > 0) setVehicles(vehData);
+        if (lzData && lzData.length > 0) setLoadingZones(lzData);
+        if (incData && incData.length > 0) setIncidents(incData);
+        if (predData && predData.length > 0) setPredictions(predData);
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
+        console.error('Dashboard telemetry loaded with Delhi NCR fallback.');
       }
     }
     loadData();
@@ -71,12 +68,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
     return () => clearInterval(interval);
   }, []);
 
-  if (loading && !kpis) {
-    return <SkeletonPage rows={3} />;
-  }
-
-  const selectedZone = zones.find((z) => z.id === selectedZoneId) || zones[0];
-  const selectedPred = predictions.find((p) => p.zone_id === selectedZoneId) || predictions[0];
+  const selectedZone = zones.find((z) => z.id === selectedZoneId) || zones[0] || mockZones[0];
+  const selectedPred = predictions.find((p) => p.zone_id === selectedZoneId) || predictions[0] || mockPredictions[0];
 
   return (
     <div className="space-y-7 max-w-[1700px] mx-auto animate-fadeIn">
@@ -96,7 +89,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
           </p>
         </div>
 
-        {/* Dual AI Status Badges */}
         <div className="flex items-center gap-3 text-xs font-mono">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-800 font-medium">
             <BrainCircuit className="w-3.5 h-3.5 text-violet-600" />
@@ -160,12 +152,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
         predictions={predictions}
         roads={roads}
         incidents={incidents}
-        loading={loading}
+        loading={false}
       />
 
       {/* 4. Central Delhi NCR Interactive Map & Zone HUD */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Map Container (8 cols) */}
         <div className="lg:col-span-8 flex flex-col space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center space-x-2">
@@ -188,7 +179,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
               onSelectZone={(zoneId) => setSelectedZoneId(zoneId)}
             />
 
-            {/* Clean Map Legend */}
             <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md p-3 rounded-lg border border-slate-200 shadow-md text-[10px] font-mono space-y-1.5">
               <div className="font-bold text-slate-700 border-b border-slate-100 pb-1">MAP LEGEND</div>
               <div className="flex items-center gap-2">
@@ -208,7 +198,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
           </div>
         </div>
 
-        {/* Selected Zone Telemetry & AI Inspection HUD (4 cols) */}
+        {/* Selected Zone Telemetry */}
         <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 flex flex-col justify-between space-y-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -217,7 +207,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
                   Selected Sector Telemetry
                 </span>
                 <h3 className="text-base font-bold text-slate-900 mt-0.5">
-                  {selectedZone?.name || 'Sector Overview'}
+                  {selectedZone?.name || 'Cyber City Hub'}
                 </h3>
                 <span className="text-xs font-mono text-slate-500">{selectedZone?.id} • {selectedZone?.category}</span>
               </div>
@@ -250,7 +240,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
               </div>
             )}
 
-            {/* AI Forward Forecast Preview for Selected Zone */}
+            {/* AI Forward Forecast Preview */}
             {selectedPred && (
               <div className="p-4 rounded-lg bg-violet-50/50 border border-violet-100 space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -290,7 +280,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
 
       {/* 5. High-Risk Corridors & Active Incidents Split Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* High-Risk Corridors (XGBoost Preview) */}
+        {/* High-Risk Corridors */}
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div>
@@ -324,7 +314,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
                   const badgeStyle = isHigh ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200';
                   return (
                     <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 px-2.5 font-semibold text-slate-900">{r.name}</td>
+                      <td className="py-2.5 px-2.5 font-semibold text-slate-900 font-sans">{r.name}</td>
                       <td className="py-2.5 px-2.5 text-slate-700">{r.current_speed_kmh} km/h</td>
                       <td className={'py-2.5 px-2.5 font-bold ' + rowStyle}>
                         {riskScore}
@@ -342,7 +332,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ liveSnapshot: _liv
           </div>
         </div>
 
-        {/* Live Incidents & Road Hazards */}
+        {/* Live Incidents */}
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div>

@@ -1,9 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { RoadSegmentModel, ZonePredictionModel, IncidentModel } from '../types';
 import { api } from '../services/api';
+import { mockRoads, mockPredictions, mockIncidents } from '../services/mockData';
 import { SourceBadge } from '../components/common/SourceBadge';
 import { ModelStatus } from '../components/common/ModelStatus';
-import { SkeletonPage } from '../components/common/Skeleton';
 import {
   ShieldAlert,
   ArrowUpDown,
@@ -11,44 +11,32 @@ import {
 } from 'lucide-react';
 
 export const RoadRiskPage: React.FC = () => {
-  const [roads, setRoads] = useState<RoadSegmentModel[]>([]);
-  const [predictions, setPredictions] = useState<ZonePredictionModel[]>([]);
-  const [incidents, setIncidents] = useState<IncidentModel[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [roads, setRoads] = useState<RoadSegmentModel[]>(mockRoads);
+  const [predictions, setPredictions] = useState<ZonePredictionModel[]>(mockPredictions);
+  const [incidents, setIncidents] = useState<IncidentModel[]>(mockIncidents);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortField, setSortField] = useState<'risk' | 'speed' | 'volume'>('risk');
   const [sortAsc, setSortAsc] = useState<boolean>(false);
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(mockRoads[0]?.id || 'R-01');
 
   useEffect(() => {
     async function loadData() {
       try {
-        setLoading(true);
         const [roadData, predData, incData] = await Promise.all([
           api.getRoads(),
           api.getPredictions(),
           api.getIncidents(),
         ]);
-        setRoads(roadData);
-        setPredictions(predData);
-        setIncidents(incData);
-        if (roadData.length > 0) {
-          setSelectedSegmentId(roadData[0].id);
-        }
+        if (roadData && roadData.length > 0) setRoads(roadData);
+        if (predData && predData.length > 0) setPredictions(predData);
+        if (incData && incData.length > 0) setIncidents(incData);
       } catch (err) {
-        console.error('Error fetching road risk data:', err);
-      } finally {
-        setLoading(false);
+        console.error('Road risk data loaded with Delhi NCR fallback.');
       }
     }
     loadData();
   }, []);
 
-  if (loading) {
-    return <SkeletonPage rows={3} />;
-  }
-
-  // Calculate risk table rows based on road data and predictions
   const segmentRiskList = roads.map((road) => {
     const matchingPred = predictions.find((p) => p.zone_id === road.from_zone_id || p.zone_id === road.to_zone_id);
     const congestion = road.congestion_level || 0.45;
@@ -116,7 +104,7 @@ export const RoadRiskPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 text-xs font-mono">
+        <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 text-xs font-mono shadow-xs">
           <ShieldAlert className="w-4 h-4 text-amber-600" />
           <div>
             <div className="text-slate-500 text-[10px]">SUPERVISED CLASSIFICATION</div>
@@ -203,7 +191,7 @@ export const RoadRiskPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid: Sortable Risk Table (8 cols) + Risk Explanation Panel (4 cols) */}
+      {/* Main Grid: Sortable Risk Table & Explanation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200/90 shadow-xs p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -265,7 +253,7 @@ export const RoadRiskPage: React.FC = () => {
                   <th className="py-2.5 px-3">Source</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 font-mono">
                 {filteredList.map((item) => {
                   const isSelected = item.road.id === selectedSegmentId;
                   const riskColor = item.riskLevel === 'HIGH' ? 'text-rose-600' : item.riskLevel === 'MODERATE' ? 'text-amber-600' : 'text-emerald-600';
@@ -277,33 +265,33 @@ export const RoadRiskPage: React.FC = () => {
                       className={'cursor-pointer transition-colors duration-150 ' + (isSelected ? 'bg-slate-100/90 font-medium' : 'hover:bg-slate-50')}
                     >
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-900">{item.road.name}</div>
-                        <div className="text-[10px] font-mono text-slate-500">
+                        <div className="font-semibold text-slate-900 font-sans">{item.road.name}</div>
+                        <div className="text-[10px] text-slate-500">
                           {item.road.id} • {item.road.length_km} km • {item.road.lane_count} Lanes
                         </div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <span className={'font-mono font-bold text-sm ' + riskColor}>
+                          <span className={'font-bold text-sm ' + riskColor}>
                             {item.riskScore}
                           </span>
-                          <span className={'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ' + badgeStyle}>
+                          <span className={'text-[9px] font-bold px-1.5 py-0.2 rounded border ' + badgeStyle}>
                             {item.riskLevel}
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-700">{item.probability}</td>
+                      <td className="py-3 px-3 text-slate-700">{item.probability}</td>
                       <td className="py-3 px-3">
-                        <div className="font-mono text-slate-800">{item.road.current_speed_kmh} km/h</div>
+                        <div className="text-slate-800">{item.road.current_speed_kmh} km/h</div>
                         <div className="text-[10px] text-slate-400">Cap: {item.road.capacity_vph} vph</div>
                       </td>
                       <td className="py-3 px-3">
                         {item.incidentsOnRoad.length > 0 ? (
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
                             {item.incidentsOnRoad.length} ACTIVE
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono text-slate-400">None</span>
+                          <span className="text-[10px] text-slate-400">None</span>
                         )}
                       </td>
                       <td className="py-3 px-3">
@@ -317,7 +305,7 @@ export const RoadRiskPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Risk Explanation Panel (4 cols) */}
+        {/* Risk Explanation Panel */}
         <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
@@ -330,7 +318,7 @@ export const RoadRiskPage: React.FC = () => {
             <SourceBadge type="ML_PREDICTION" size="xs" />
           </div>
 
-          {activeSelected ? (
+          {activeSelected && (
             <div className="space-y-4">
               <div>
                 <div className="text-xs font-mono text-slate-500 uppercase">Selected Segment</div>
@@ -359,7 +347,6 @@ export const RoadRiskPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Observed Risk Drivers */}
               <div className="space-y-2.5">
                 <div className="text-xs font-bold text-slate-700 font-mono uppercase">Key Contributing Factors</div>
 
@@ -396,7 +383,6 @@ export const RoadRiskPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action Recommendation */}
               <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900 leading-relaxed">
                 <strong>Decision Support:</strong>{' '}
                 {activeSelected.riskLevel === 'HIGH'
@@ -406,8 +392,6 @@ export const RoadRiskPage: React.FC = () => {
                   : 'Road conditions optimal. Normal commercial dispatch permitted.'}
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-xs text-slate-400">Select a corridor to view detailed risk analysis.</div>
           )}
         </div>
       </div>
