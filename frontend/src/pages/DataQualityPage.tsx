@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DatasetSummaryModel, DataQualityReportModel } from '../types';
 import { api } from '../services/api';
 import { SourceBadge } from '../components/common/SourceBadge';
@@ -59,7 +59,7 @@ export const DataQualityPage: React.FC = () => {
 
   const provenanceMatrix = [
     { source: 'Urban Traffic PeMS Records', type: 'Traffic Speed & Volume', classification: 'REAL_DATASET', coverage: '14 Corridors (9,408 rows)', status: 'VALIDATED' },
-    { source: 'Metropolitan Zone Polygons', type: 'GIS Boundary Coordinates', classification: 'REAL_DATABASE', coverage: '6 Delhi NCR Sectors', status: 'PERSISTED' },
+    { source: 'Metropolitan Zone Polygons', type: 'GIS Boundary Coordinates', classification: 'REAL_DATABASE', coverage: '6 Bengaluru Urban Sectors', status: 'PERSISTED' },
     { source: 'Amazon Chronos-2 Speed Model', type: 'Forward Speed Trajectory', classification: 'ML_PREDICTION', coverage: '15, 30, 60 min Horizons', status: 'OPERATIONAL' },
     { source: 'XGBoost Risk Classifier', type: 'Hazard Probability & Level', classification: 'ML_PREDICTION', coverage: 'All Network Segments', status: 'OPERATIONAL' },
     { source: 'City Pressure Index (0-100)', type: 'Weighted Deterministic Score', classification: 'CALCULATED', coverage: '7 Urban Stress Factors', status: 'COMPUTED' },

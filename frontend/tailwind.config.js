@@ -25,15 +25,18 @@ export default {
           glow: '#fb7185',
           dim: 'rgba(244, 63, 94, 0.15)',
         },
-        emerald: {
-          neon: '#10b981',
-          glow: '#34d399',
-          dim: 'rgba(16, 185, 129, 0.15)',
+        brand: {
+          cream: '#fbfaf7',
+          navy: '#0b132b',
+          dark: '#0f172a',
+          emerald: '#059669',
+          yellow: '#f5c344',
         },
       },
       fontFamily: {
-        sans: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['SF Mono', 'JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ['Inter', 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        serif: ['Newsreader', 'Georgia', 'serif'],
+        mono: ['JetBrains Mono', 'SF Mono', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         'antigravity': '0 20px 50px -12px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.08)',

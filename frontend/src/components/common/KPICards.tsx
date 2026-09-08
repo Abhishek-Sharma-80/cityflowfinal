@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { KPIDashboardModel, ZonePredictionModel, RoadSegmentModel, IncidentModel } from '../../types';
 import { SourceBadge } from './SourceBadge';
 import { Activity, ShieldAlert, BrainCircuit, AlertTriangle, Radio, Database, TrendingDown } from 'lucide-react';
@@ -93,7 +93,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
             <TrendingDown className="w-3 h-3" /> Normal Flow
           </span>
-          <span>Delhi NCR</span>
+          <span>Bengaluru Metro</span>
         </div>
       </div>
 
@@ -217,7 +217,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
         <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
           <span className="text-cyan-700 font-semibold">100% Monitored</span>
-          <span>Delhi NCR</span>
+          <span>Bengaluru Metro</span>
         </div>
       </div>
 

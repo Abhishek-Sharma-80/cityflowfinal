@@ -11,18 +11,6 @@ const CITY_PROFILES = [
     desc: '10 zones · Tech corridors, Heritage markets, IT parks, Airport hub',
     zones: 10, vehicles: 480, population: '13.2M',
   },
-  {
-    id: 'DELHI_CENTRAL',
-    name: '🏛️ Central Delhi District',
-    desc: '8 zones · Government district, Old city bazaars, Metro corridors',
-    zones: 8, vehicles: 620, population: '32M',
-  },
-  {
-    id: 'MUMBAI_PORT',
-    name: '🌊 Mumbai Port-Logistics Belt',
-    desc: '9 zones · Port terminal, JNPT corridor, Industrial MIDC, BKC finance hub',
-    zones: 9, vehicles: 540, population: '20.7M',
-  },
 ];
 
 interface SettingsPageProps {
@@ -158,7 +146,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ addToast }) => {
           <span className="text-[10px] font-mono text-emerald-700 uppercase tracking-wider font-semibold">Active Digital Twin</span>
         </div>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-opacity duration-500 ${switching ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`max-w-md transition-opacity duration-500 ${switching ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
           {CITY_PROFILES.map(city => {
             const isActive = cityProfile === city.id;
             return (

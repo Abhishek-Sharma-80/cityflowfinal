@@ -140,7 +140,7 @@ export const LogisticsPage: React.FC = () => {
                 Delivery Manifests Today
               </span>
               <div className="text-3xl font-bold font-mono text-slate-900 mt-1">{deliveries.length}</div>
-              <p className="text-xs text-slate-500 mt-1">Dispatched across Delhi NCR</p>
+              <p className="text-xs text-slate-500 mt-1">Dispatched across Bengaluru</p>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200/90 shadow-xs">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">

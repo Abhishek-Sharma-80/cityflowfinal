@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IncidentModel, RoadSegmentModel, ZoneModel } from '../types';
 import { api } from '../services/api';
 import { SourceBadge } from '../components/common/SourceBadge';
@@ -73,7 +73,7 @@ export const IncidentsPage: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-slate-500">
-            Road hazards, closures, construction disruptions, and priority vehicle corridors across Delhi NCR.
+            Road hazards, closures, construction disruptions, and priority vehicle corridors across Bengaluru.
           </p>
         </div>
 

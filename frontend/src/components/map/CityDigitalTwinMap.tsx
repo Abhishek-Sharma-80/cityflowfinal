@@ -91,7 +91,7 @@ export const CityDigitalTwinMap: React.FC<CityDigitalTwinMapProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const center: [number, number] = [12.9716, 77.5946];
+  const center: [number, number] = [12.9450, 77.6500];
 
   const getPressureColor = (score: number) => {
     if (score <= 30) return '#059669';
@@ -208,7 +208,7 @@ export const CityDigitalTwinMap: React.FC<CityDigitalTwinMapProps> = ({
 
       <MapContainer
         center={center}
-        zoom={13}
+        zoom={12}
         scrollWheelZoom={true}
         className="w-full h-full"
       >

@@ -243,7 +243,7 @@ export const MLIntelligencePage: React.FC = () => {
               Live Inference Playground
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Execute live prediction on any Delhi NCR corridor using the active model pipeline.
+              Execute live prediction on any Bengaluru corridor using the active model pipeline.
             </p>
           </div>
           <SourceBadge type="REAL_API" size="xs" />
